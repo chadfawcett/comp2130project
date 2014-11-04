@@ -12,7 +12,6 @@ const uint64_t pipe = 0xE8E8F0F0E1LL; // Define the transmit pipe
 
 /*-----( Declare objects )-----*/
 RF24 radio(CE_PIN, CSN_PIN); // Create a Radio
-int message[1];
 
 void setup()   /****** SETUP: RUNS ONCE ******/
 {
@@ -24,12 +23,16 @@ void setup()   /****** SETUP: RUNS ONCE ******/
 
 void loop()   /****** LOOP: RUNS CONSTANTLY ******/
 {
-  message[0] = 10;
-  
-  radio.write( message, sizeof(message) );
-  Serial.print("writing ");
-  Serial.println(message[0]);
-  
-  //delay(500);
+  char message1[] = "on";
+  for (int i = 0; i < 100; i++) {
+    radio.write( message1, sizeof(message1) );
+    delay(10);
+  }
+
+  char message2[] = "off";
+  for (int i = 0; i < 100; i++) {
+    radio.write( message2, sizeof(message2) );
+    delay(10);
+  }
 }//--(end main loop )---
 
