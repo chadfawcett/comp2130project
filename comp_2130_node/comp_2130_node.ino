@@ -17,6 +17,10 @@ Servo myservo;
 
 char message[6];
 
+//  Define angle positions for servo
+int openPos = 140;
+int closePos = 40;
+
 void setup()
 {
   delay(1000);
@@ -25,7 +29,7 @@ void setup()
   radio.startListening();
   
   myservo.attach(6);
-  myservo.write(180);  //  Open vent by default
+  myservo.write(openPos);  //  Open vent by default
 }
 
 void loop()
@@ -39,9 +43,9 @@ void loop()
       // Get message
       done = radio.read(message, sizeof(message));
       if (strcmp(message, "open") == 0) {
-        myservo.write(180);
+        myservo.write(openPos);
       } else if (strcmp(message, "close") == 0) {
-        myservo.write(10);
+        myservo.write(closePos);
       }
     }
   }
