@@ -2,6 +2,8 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
+#include <LiquidCrystal.h>
+
 //  IO pins for Transceiver
 #define CE_PIN   9
 #define CSN_PIN 10
@@ -26,12 +28,19 @@ char open_[6] = "open";
 char close_[6] = "close";
 char *prevMessage = open_;  //  Open by default
 
+//  Create LCD Driver
+LiquidCrystal lcd(8, 7, 6, 5, 4, 3);
+
+//  Time stamp for updating LCD
+unsigned long watch = 0;
+
 void setup()
 {
+  lcd.begin(16, 2);
+  lcd.print("Starting...");
+  
   radio.begin();
   radio.openWritingPipe(pipe);
-  
-  Serial.begin(9600);
 }
 
 void loop()
@@ -39,15 +48,11 @@ void loop()
   //  Read user optimal temp input and map to appropriate room temperatures
   optimalTempVal = analogRead(optimalTempPin);
   optimalTempVal = map(optimalTempVal, 0, 1023, 15, 31);
-  Serial.print(optimalTempVal);
-  Serial.print(" ");
   
   //  Read current temperature from sensor
   tempVal = analogRead(tempPin);
   //  Convert reading to degrees C
   tempVal = (tempVal * 5.0 / 1024.0 - 0.5) * 100;
-  Serial.print(tempVal);
-  Serial.print(" ");
   
   if (tempVal < optimalTempVal - 1) {
     radio.write(open_, sizeof(open_));
@@ -59,6 +64,19 @@ void loop()
     radio.write(prevMessage, sizeof(prevMessage));
   }
   
-  Serial.println(prevMessage);
+  //  Arduino isn't powerful enought to update the lcd
+  //  and send the command on each loop. This makes it
+  //  so the LCD only updates one a second
+  if (millis() - watch > 1000) {
+    lcd.clear();
+    lcd.print("Opt   Cur   Pos ");
+    lcd.setCursor(0, 1);
+    lcd.print(optimalTempVal);
+    lcd.setCursor(6, 1);
+    lcd.print(tempVal);
+    lcd.setCursor(13, 1);
+    lcd.print(strcmp(prevMessage, "open") == 0 ? "O" : "C");
+    watch = millis();
+  }
 }
 
