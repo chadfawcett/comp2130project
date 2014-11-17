@@ -1,61 +1,49 @@
-/*-----( Import needed libraries )-----*/
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
 
 #include <Servo.h>
 
-/*-----( Declare Constants and Pin Numbers )-----*/
+//  IO pins for Transceiver
 #define CE_PIN   9
 #define CSN_PIN 10
 
-// NOTE: the "LL" at the end of the constant is "LongLong" type
-const uint64_t pipe = 0xE8E8F0F0E1LL; // Define the transmit pipe
+//  Define the transmit pipe
+const uint64_t pipe = 0xE8E8F0F0E1LL;
 
-
-/*-----( Declare objects )-----*/
-RF24 radio(CE_PIN, CSN_PIN); // Create a Radio
-
+//  Create a Radio and Servo
+RF24 radio(CE_PIN, CSN_PIN);
 Servo myservo;
 
-char message[4];
+char message[6];
 
-void setup()   /****** SETUP: RUNS ONCE ******/
+void setup()
 {
-  Serial.begin(9600);
   delay(1000);
-  Serial.println("Nrf24L01 Receiver Starting");
   radio.begin();
   radio.openReadingPipe(1,pipe);
   radio.startListening();
   
   myservo.attach(6);
-}//--(end setup )---
+  myservo.write(180);  //  Open vent by default
+}
 
-
-void loop()   /****** LOOP: RUNS CONSTANTLY ******/
-{
+void loop()
+{ 
   if ( radio.available() )
   {
-    // Read the data payload until we've received everything
+    //  Continue reading from radio until nothing else is available to read
     bool done = false;
     while (!done)
     {
-      // Fetch the data payload
-      done = radio.read( message, sizeof(message) );
-      if (message[0] == 'o' && message[1] == 'n') {
-        Serial.println("on");
+      // Get message
+      done = radio.read(message, sizeof(message));
+      if (strcmp(message, "open") == 0) {
         myservo.write(180);
-      } else if (message[0] == 'o' && message[1] == 'f' && message[1] == 'f') {
-        Serial.println("off");
+      } else if (strcmp(message, "close") == 0) {
         myservo.write(10);
       }
     }
   }
-  else
-  {    
-      //Serial.println("No radio available");
-  }
-
-}//--(end main loop )---
+}
 

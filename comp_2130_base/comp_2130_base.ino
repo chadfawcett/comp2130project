@@ -1,38 +1,64 @@
-/*-----( Import needed libraries )-----*/
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-/*-----( Declare Constants and Pin Numbers )-----*/
+
+//  IO pins for Transceiver
 #define CE_PIN   9
 #define CSN_PIN 10
 
-// NOTE: the "LL" at the end of the constant is "LongLong" type
-const uint64_t pipe = 0xE8E8F0F0E1LL; // Define the transmit pipe
+//  Define the transmit pipe
+const uint64_t pipe = 0xE8E8F0F0E1LL;
 
+//  Create a Radio
+RF24 radio(CE_PIN, CSN_PIN);
 
-/*-----( Declare objects )-----*/
-RF24 radio(CE_PIN, CSN_PIN); // Create a Radio
+//  Potentiometer pins
+int optimalTempPin = 0;
+int optimalTempVal = 0;
 
-void setup()   /****** SETUP: RUNS ONCE ******/
+//  Temperature sensor pins
+int tempPin = 1;
+float tempVal = 0;
+
+//  Define messages to send
+//  Note: 'open' and 'close' are reserved words
+char open_[6] = "open";
+char close_[6] = "close";
+char *prevMessage = open_;  //  Open by default
+
+void setup()
 {
-  Serial.begin(9600);
   radio.begin();
   radio.openWritingPipe(pipe);
-}//--(end setup )---
+  
+  Serial.begin(9600);
+}
 
-
-void loop()   /****** LOOP: RUNS CONSTANTLY ******/
+void loop()
 {
-  char message1[] = "on";
-  for (int i = 0; i < 100; i++) {
-    radio.write( message1, sizeof(message1) );
-    delay(10);
+  //  Read user optimal temp input and map to appropriate room temperatures
+  optimalTempVal = analogRead(optimalTempPin);
+  optimalTempVal = map(optimalTempVal, 0, 1023, 15, 31);
+  Serial.print(optimalTempVal);
+  Serial.print(" ");
+  
+  //  Read current temperature from sensor
+  tempVal = analogRead(tempPin);
+  //  Convert reading to degrees C
+  tempVal = (tempVal * 5.0 / 1024.0 - 0.5) * 100;
+  Serial.print(tempVal);
+  Serial.print(" ");
+  
+  if (tempVal < optimalTempVal - 1) {
+    radio.write(open_, sizeof(open_));
+    prevMessage = open_;
+  } else if(tempVal > optimalTempVal + 1) {
+    radio.write(close_, sizeof(close_));
+    prevMessage = close_;
+  } else {
+    radio.write(prevMessage, sizeof(prevMessage));
   }
-
-  char message2[] = "off";
-  for (int i = 0; i < 100; i++) {
-    radio.write( message2, sizeof(message2) );
-    delay(10);
-  }
-}//--(end main loop )---
+  
+  Serial.println(prevMessage);
+}
 
